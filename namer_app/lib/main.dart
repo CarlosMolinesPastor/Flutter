@@ -1,6 +1,5 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 //Aplicacion principal
@@ -37,19 +36,20 @@ class MyApp extends StatelessWidget {
 }
 
 //LA clase MyAppState extiende de ChangeNotifier que es el que define los datos que la app necvesita para
-//funcionar, como extiene de ChangeNotifier puede notificar a los widgets hijos cuando cambia el estado.
+//funcionar, como extiende de ChangeNotifier puede notificar a los widgets hijos cuando cambia el estado.
 //Como se crea con ChangeNotifierProvider, en MyApp le brinda a todos los widgets conocer su estado actual.
 class MyAppState extends ChangeNotifier {
   //Tiene una variable ccon el par de palabras aleatorias.
   var current = WordPair.random();
-  //El nuevo método getNext() reasignará el elemento current con un nuevo WordPair aleatorio. También llamará a notifyListeners() (un método de ChangeNotifier) que garantiza que se notifique
+  //El nuevo método getNext() reasignará el elemento current con un nuevo WordPair aleatorio. También llamará a notifyListeners()
+  //(un método de ChangeNotifier) que garantiza que se notifique
   //a todo elemento que esté mirando a MyAppState.
   void getNext() {
     current = WordPair.random();
     notifyListeners();
   }
 
-  // Creamos lista vacia de palabras
+  // Creamos lista vacia de palabras para guardar las palabras favoritas
   var favorites = <WordPair>[];
 
   // Mewtodo toggleFavorite que agrega o quita el par de palabras de la lista de favoritos
