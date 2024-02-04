@@ -48,6 +48,7 @@ class MyAppState extends ChangeNotifier {
   //Variable nextLenguaje que almacena el primer elemento de la lista
   var nextLenguaje = "";
   var favorites = <String>[];
+  int nextIndex = 0;
 
   //Variable historyListKey que almacena la clave de la lista
   GlobalKey? historyListKey;
@@ -65,13 +66,17 @@ class MyAppState extends ChangeNotifier {
     String nextLenguaje;
     //Si la lista lenguajes que es la que vamos añadiendo desde Introducir los datos no esta vacía
     if (lenguajes.isNotEmpty) {
-      //Le damos el valor del primer elemento de la lista que lo quitamos y la insertamos en la lista de historial
-      nextLenguaje = lenguajes.removeAt(0);
-      history.insert(0, nextLenguaje);
-      // Actualizamos la lista animada insertando el nuevo elemento
-      var animatedList = historyListKey?.currentState as AnimatedListState?;
-      // Se inserta el nuevo elemento
-      animatedList?.insertItem(0);
+      if (nextIndex < lenguajes.length) {
+        //Le damos el valor del primer elemento de la lista que lo quitamos y la insertamos en la lista de historial
+        nextLenguaje = lenguajes[nextIndex];
+        history.insert(0, nextLenguaje);
+        // Actualizamos la lista animada insertando el nuevo elemento
+        var animatedList = historyListKey?.currentState as AnimatedListState?;
+        // Se inserta el nuevo elemento
+        animatedList?.insertItem(0);
+        // Incrementa el contador
+        nextIndex++;
+      }
       //Si no hay elementos en la lista se muestra un mensaje de error
     } else {
       nextLenguaje = "La lista está vacía";
@@ -98,6 +103,19 @@ class MyAppState extends ChangeNotifier {
   //Metodo que elimina un elemento de la lista favoritos
   void removeFavorite(String lenguaje) {
     favorites.remove(lenguaje);
+    notifyListeners();
+  }
+
+  //Metodo para eliminar un lenguaje de la lista lenguajes
+  void removeLenguaje(int index) {
+    lenguajes.removeAt(index);
+    //Se notifica a los widgets los cambios
+    notifyListeners();
+  }
+
+  //Metodo para limpiar la lista lenguajes
+  void clearLenguajes() {
+    lenguajes.clear();
     notifyListeners();
   }
 }
@@ -180,7 +198,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           Icons.add,
                           color: Colors.blue,
                         ),
-                        label: 'Añadir',
+                        label: 'Lenguajes',
                       )
                     ],
                     // Se define el indice de la barra de navegación
@@ -214,7 +232,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                       NavigationRailDestination(
                         icon: Icon(Icons.add, color: Colors.blue),
-                        label: Text('Añadir'),
+                        label: Text('Lenguajes'),
                       )
                     ],
                     selectedIndex: selectedIndex,
@@ -594,84 +612,139 @@ class _IntroducirDatosState extends State<IntroducirDatos> {
     super.dispose();
   }
 
-  //Metodo que construye el widget
+//Metodo que construye el widget
   @override
   Widget build(BuildContext context) {
     //Crea una instancia de la clase MyAppState que leemos desde el contexto
     var appState = context.read<MyAppState>();
     //Crea una instancia de la clase Theme
     var theme = Theme.of(context);
-    //Devuelve un widget Scaffold con un widget Center que contiene un widget Column donde se crean los botones
+    //Devuelve un widget Scaffold con un fondo transparente y un cuerpo con un widget Center
+    // con un widget Column que contiene un widget Form y un widget ElevatedButton que
+    // hace que el widget Form valide los datos introducidos por el usuario y construye
+    // una nueva instancia de la clase MyAppState con los datos introducidos por el usuario
+    // y notifica a los widgets los cambios
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: theme.colorScheme.surfaceVariant,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.all(20),
-              //Crteamos un boton para alojar el texto y que se vea mas bonito, por ello no tiene funcion
-              child: ElevatedButton(
-                onPressed: () {
-                  //Boton sin funcion
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                  child: Text(
+                    'LENGUAJE DE PROGRAMACIÓN',
+                    style: TextStyle(
+                      fontSize: 44,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.surfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: appState.lenguajes.length,
+                itemBuilder: (context, index) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(appState.lenguajes[index]),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          setState(() {
+                            appState.removeLenguaje(index);
+                          });
+                        },
+                      ),
+                    ],
+                  );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromARGB(255, 0, 0, 0),
-                  //theme.colorScheme.primary, // color de fondo del botón
-                ),
-                child: Text(
-                  'LENGUAJE DE PROGRAMACIÓN',
-                  style: TextStyle(
-                    fontSize: 44, // Ajusta el tamaño del texto
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.surfaceVariant,
+              ),
+              Form(
+                key: formKey,
+                child: SizedBox(
+                  width: 300,
+                  child: TextFormField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      labelStyle: TextStyle(color: theme.colorScheme.primary),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor introduce un lenguaje';
+                      }
+                      return null;
+                    },
+                    onFieldSubmitted: (value) {
+                      if (formKey.currentState!.validate()) {
+                        setState(() {
+                          appState.addLenguaje(value);
+                        });
+                        controller.clear();
+                      }
+                    },
                   ),
                 ),
               ),
-            ),
-            Form(
-              key: formKey,
-              child: SizedBox(
-                width: 300, // Establece el ancho  para el TextFormField
-                child: TextFormField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    labelStyle: TextStyle(color: theme.colorScheme.primary),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor introduce un lenguaje';
-                    }
-                    return null;
-                  },
-                  onFieldSubmitted: (value) {
-                    if (formKey.currentState!.validate()) {
-                      appState.addLenguaje(value);
-                      controller.clear();
-                    }
-                  },
+              SizedBox(
+                  height:
+                      20), // Agrega espacio entre el TextFormField y los botones
+              Container(
+                width:
+                    300, // Establece el ancho del contenedor como 300 pixeles
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          setState(() {
+                            //Añade un nuevo lenguaje
+                            appState.addLenguaje(controller.text);
+                          });
+                          controller.clear();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color.fromARGB(255, 163, 8, 253),
+                      ),
+                      child: Text('Añadir lenguaje',
+                          style: TextStyle(
+                            color: Colors.white,
+                          )),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          //Limpia la lista de lenguajes
+                          // Funcion añadida en la clase MyAppState
+                          appState.clearLenguajes();
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color.fromARGB(255, 163, 8, 253),
+                      ),
+                      child: Text('Eliminar todos',
+                          style: TextStyle(
+                            color: Colors.white,
+                          )),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            SizedBox(height: 50), // Añade un espacio de 20 píxeles de altura
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  appState.addLenguaje(controller.text);
-                  controller.clear();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 163, 8, 253),
-              ),
-              child: Text('Añadir lenguaje',
-                  style: TextStyle(
-                    color: Colors.white,
-                  )),
-            ),
-            // Aquí van los demás widgets de tu columna
-          ],
+              SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
